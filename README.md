@@ -18,11 +18,11 @@ Every AI coding session produces three outputs:
 2. **Decisions** — which approach was chosen, what was rejected, what constraints were found. **Lost.**
 3. **Understanding** — deeper comprehension of how the system works and why. **Lost.**
 
-Two-thirds of every session's intellectual output evaporates when the conversation window closes. This is **session context** (intent and decision traces) — ephemeral by nature, critical by impact. It lives in the agent's conversation window and disappears when the window is compacted or closed. Storing it in local file artifacts (specs, plans, session logs) has been tried; it creates version control friction, context window bloat, and maintenance overhead for information that is fundamentally transient. The problem is not that session context needs a new storage location. It needs to travel with the thing that already persists: the commit.
+Two-thirds of every session's value evaporates when the conversation window closes. Storing it in file artifacts (specs, plans, session logs) creates version control friction, context window bloat, and maintenance overhead. Session context doesn't need a new storage location — it needs to travel with the thing that already persists: the commit.
 
-And there is a second, quieter problem. Commit history is the one context source available to every AI coding tool — durable, portable, queryable out of the box. Yet it's underutilised. Commits in general, and the Conventional Commits spec in particular, were designed to help developers navigate change history — changelogs, semantic versioning, human-readable summaries. Agents are now the most frequent consumers of commit logs, yet the standard AI-generated commit body restates what the diff already shows: "Added GoogleAuthProvider class. Created callback route handler. Updated auth middleware." This is noise. An agent reading the diff gets the same information. What it cannot get from the diff is why passport.js was chosen over auth0-sdk, what constraint forced the callback route pattern, or what the developer was actually trying to achieve. The opportunity is to optimise for agent comprehension.
+Commit history is the one context source every AI coding tool can access out of the box. Yet the standard AI-generated commit body restates what the diff shows — noise. What agents can't get from the diff is *why* an approach was chosen, what constraints shaped it, or what was tried and rejected.
 
-Git already tracks everything about a session — branches track scope, diffs track changes, commit history tracks progression. The one thing it doesn't track is reasoning. The commit body has always been available for this. We just never needed it before AI.
+Git tracks branches, diffs, and history. The one thing it doesn't track is reasoning. The commit body has always been available for this.
 
 ## The Solution
 
