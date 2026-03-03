@@ -18,15 +18,17 @@ Every AI coding session produces three outputs:
 2. **Decisions** — which approach was chosen, what was rejected, what constraints were found. **Lost.**
 3. **Understanding** — deeper comprehension of how the system works and why. **Lost.**
 
-Two-thirds of every session's intellectual output evaporates when the conversation window closes. This is session context — ephemeral by nature, critical by impact. It lives in the agent's conversation window and disappears when the window is compacted or closed. Storing it in local file artifacts (specs, plans, session logs) has been tried; it creates version control friction, context window bloat, and maintenance overhead for information that is fundamentally transient. The problem is not that session context needs a new storage location. It needs to travel with the thing that already persists: the commit.
+Two-thirds of every session's intellectual output evaporates when the conversation window closes. This is **session context** (intent and decision traces) — ephemeral by nature, critical by impact. It lives in the agent's conversation window and disappears when the window is compacted or closed. Storing it in local file artifacts (specs, plans, session logs) has been tried; it creates version control friction, context window bloat, and maintenance overhead for information that is fundamentally transient. The problem is not that session context needs a new storage location. It needs to travel with the thing that already persists: the commit.
 
-And there is a second, quieter problem. Git history is no longer primarily read by humans. Agents are the most frequent consumers of commit logs — at session start, during exploration, when assessing impact. Yet the standard AI-generated commit body restates what the diff already shows: "Added GoogleAuthProvider class. Created callback route handler. Updated auth middleware." This is noise. An agent reading the diff gets the same information. What it cannot get from the diff is why passport.js was chosen over auth0-sdk, what constraint forced the callback route pattern, or what the developer was actually trying to achieve. Current commit conventions optimise for human skimming. The opportunity is to optimise for agent comprehension.
+And there is a second, quieter problem. Commit history is the one context source available to every AI coding tool — durable, portable, queryable out of the box. Yet it's underutilised. Commits in general, and the Conventional Commits spec in particular, were designed to help developers navigate change history — changelogs, semantic versioning, human-readable summaries. Agents are now the most frequent consumers of commit logs, yet the standard AI-generated commit body restates what the diff already shows: "Added GoogleAuthProvider class. Created callback route handler. Updated auth middleware." This is noise. An agent reading the diff gets the same information. What it cannot get from the diff is why passport.js was chosen over auth0-sdk, what constraint forced the callback route pattern, or what the developer was actually trying to achieve. The opportunity is to optimise for agent comprehension.
 
 Git already tracks everything about a session — branches track scope, diffs track changes, commit history tracks progression. The one thing it doesn't track is reasoning. The commit body has always been available for this. We just never needed it before AI.
 
-## The Convention
+## The Solution
 
-A contextual commit uses the standard Conventional Commit subject line and adds **action lines** in the body — typed, scoped entries that capture reasoning the diff cannot show.
+Contextual commits capture **intent** (what you're building and why) and **historical** context (decisions, rejections, constraints, learnings) — the two context types that accumulate over time and cannot be extracted from code analysis alone.
+
+The format extends a standard Conventional Commit subject line with **action lines** in the body — typed, scoped entries that capture reasoning the diff cannot show.
 
 ```
 feat(auth): implement Google OAuth provider
@@ -61,8 +63,6 @@ The subject line tells you **what**. The body tells you **why**.
 
 **scope** is a human-readable label — the domain area, module, or concept. Use whatever vocabulary is natural in your project: `auth`, `payment-flow`, `api-contracts`, `session-store`.
 
-Contextual commits capture **intent** (what you're building and why) and **historical** context (decisions, rejections, constraints, learnings) — the two context types that accumulate over time and cannot be extracted from code analysis alone. Other context types — structural (architecture, dependencies), conventional (patterns, code style), verification (test strategy, quality criteria) — live in the codebase itself and require different capture mechanisms.
-
 ### Design Principles
 
 - **Extends, never breaks.** The subject line is a standard Conventional Commit. All existing tooling (commitlint, semantic-release, changelog generators) works unchanged.
@@ -74,34 +74,37 @@ Contextual commits capture **intent** (what you're building and why) and **histo
 
 For the formal specification with numbered rules and ABNF grammar, see [SPEC.md](SPEC.md).
 
-## Reference Implementation
+## Why This Matters
 
-This repo includes two agent-agnostic files following the [Agent Skills](https://agentskills.io) open standard. They work with any compatible agent — Claude Code, GitHub Copilot, Cursor, Gemini CLI, and [26+ others](https://agentskills.io).
+### The context that disappears
 
-### Quick Start
+The agent proposes an approach you already tried and rejected last session — but the reasoning that ruled it out died with the conversation window. It writes a clean implementation that violates a constraint it has no way of knowing about, and discovers it by failing. Three months later, another session sees a pattern in the code that looks arbitrary — it wasn't, but the reason existed in a conversation that no longer exists.
 
-```bash
-npx skills add berserkdisruptors/contextual-commits
-```
+Same problem, three forms. AI coding sessions produce decisions and understanding alongside code, but only the code survives in git.
 
-Auto-detects your agent (Claude Code, Cursor, Copilot, Codex, Gemini CLI, and [40+ others](https://agentskills.io)), installs the skills to the correct directory. That's it.
+### What agents can and cannot recover
 
-### What's Included
+Several categories of context shape AI coding quality. Most can be reverse-engineered from the codebase: architecture, code patterns, test strategy, naming conventions. An agent that reads your code can figure these out.
 
-| File | What It Does |
-|------|--------------|
-| [`skills/contextual-commit/SKILL.md`](skills/contextual-commit/SKILL.md) | Teaches the agent the contextual commit format. Auto-invoked when committing. Produces structured action lines based on what happened in the session. |
-| [`skills/recall/SKILL.md`](skills/recall/SKILL.md) | `/recall` — reconstructs development context from contextual commit history. Supports three modes: full session briefing, scope queries, and action+scope queries. |
+Two categories cannot be reverse-engineered: **what you intended** and **what you already tried**. Intent and historical context — the decisions made, alternatives rejected, constraints discovered, lessons learned — exist only in human memory and disappearing conversations.
 
-### Usage
+Contextual commits capture exactly these two. Not because they're the most interesting, but because they're the ones that would otherwise be permanently lost.
 
-**Writing contextual commits** — just commit normally. The skill activates automatically when the agent writes a commit and produces action lines based on the session's conversation.
+### Compounding
 
-**Recalling context** — `/recall` supports three modes:
+The first contextual commit saves one future re-exploration. The hundredth means an agent starting a fresh session inherits every decision, rejection, constraint, and learning from every previous session — across every contributor.
 
-- `/recall` — full session briefing. Shows accumulated intent, decisions, rejections, constraints, and learnings for the current branch.
-- `/recall auth` — scope query. Searches the entire repo history for all action lines matching a scope (prefix-matched, so `auth` also finds `auth-tokens`, `auth-library`).
-- `/recall rejected(auth)` — action+scope query. Searches for a specific action type within a scope. Useful for checking what's been tried and discarded before proposing an approach.
+This is not documentation you maintain. It's append-only history that accumulates as a side effect of committing code. No files to keep current. No wiki pages to update. No merge conflicts. Just git.
+
+## Who Needs to Act
+
+This convention is a spec for AI coding tools to implement natively. 
+
+The goal is for coding agents (Claude Code, OpenCode, Codex, Gemini CLI, and others) and IDEs (Cursor, Windsurf, and others) to follow this convention by default — replacing the noise they currently generate with signal. 
+
+Every developer benefits when agents stop restating diffs and start preserving reasoning. The problem is universal; the solution scales through tooling, not individual discipline. 
+
+The reference implementation below is a bridge for today — agent skills that any developer can install. The real adoption path is tool makers building this in.
 
 ## Examples
 
@@ -153,32 +156,36 @@ chore(deps): bump express to 4.21.1
 
 The conventional commit subject is sufficient. Don't add noise.
 
-## Why This Matters
+## Reference Implementation
 
-### The context that disappears
+This repo includes two agent-agnostic files following the [Agent Skills](https://agentskills.io) open standard. They work with any compatible agent — Claude Code, GitHub Copilot, Cursor, Gemini CLI, and [26+ others](https://agentskills.io).
 
-The agent proposes an approach you already tried and rejected last session — but the reasoning that ruled it out died with the conversation window. It writes a clean implementation that violates a constraint it has no way of knowing about, and discovers it by failing. Three months later, another session sees a pattern in the code that looks arbitrary — it wasn't, but the reason existed in a conversation that no longer exists.
+### Quick Start
 
-Same problem, three forms. AI coding sessions produce decisions and understanding alongside code, but only the code survives in git.
+```bash
+npx skills add berserkdisruptors/contextual-commits
+```
 
-### What agents can and cannot recover
+Auto-detects your agent (Claude Code, Cursor, Copilot, Codex, Gemini CLI, and [40+ others](https://agentskills.io)), installs the skills to the correct directory. That's it.
 
-Several categories of context shape AI coding quality. Most can be reverse-engineered from the codebase: architecture, code patterns, test strategy, naming conventions. An agent that reads your code can figure these out.
+### What's Included
 
-Two categories cannot be reverse-engineered: **what you intended** and **what you already tried**. Intent and historical context — the decisions made, alternatives rejected, constraints discovered, lessons learned — exist only in human memory and disappearing conversations.
+| File | What It Does |
+|------|--------------|
+| [`skills/contextual-commit/SKILL.md`](skills/contextual-commit/SKILL.md) | Teaches the agent the contextual commit format. Auto-invoked when committing. Produces structured action lines based on what happened in the session. |
+| [`skills/recall/SKILL.md`](skills/recall/SKILL.md) | `/recall` — reconstructs development context from contextual commit history. Supports three modes: full session briefing, scope queries, and action+scope queries. |
 
-Contextual commits capture exactly these two. Not because they're the most interesting, but because they're the ones that would otherwise be permanently lost.
+### Usage
 
-### Compounding
+**Writing contextual commits** — just commit normally. The skill activates automatically when the agent writes a commit and produces action lines based on the session's conversation.
 
-The first contextual commit saves one future re-exploration. The hundredth means an agent starting a fresh session inherits every decision, rejection, constraint, and learning from every previous session — across every contributor.
+**Recalling context** — `/recall` supports three modes:
 
-This is not documentation you maintain. It's append-only history that accumulates as a side effect of committing code. No files to keep current. No wiki pages to update. No merge conflicts. Just git.
+- `/recall` — full session briefing. Shows accumulated intent, decisions, rejections, constraints, and learnings for the current branch.
+- `/recall auth` — scope query. Searches the entire repo history for all action lines matching a scope (prefix-matched, so `auth` also finds `auth-tokens`, `auth-library`).
+- `/recall rejected(auth)` — action+scope query. Searches for a specific action type within a scope. Useful for checking what's been tried and discarded before proposing an approach.
 
 ## FAQ
-
-**Does this break Conventional Commits?**
-No. The subject line IS a conventional commit. Action lines live in the body, which Conventional Commits does not govern. Existing tooling (commitlint, semantic-release, changelog generators) validates the subject line only and is completely unaffected.
 
 **What about repos that already use conventional commits but not contextual commits?**
 `/recall` still works — it falls back to summarizing recent activity from commit subjects and file change patterns. The output is thinner (WHAT happened, not WHY) but still provides useful orientation. Adopting contextual commits is incremental: new commits carry action lines, old commits remain as they are. The context accumulates forward.
@@ -189,33 +196,17 @@ The skill handles this explicitly. The agent only writes action lines for what i
 **What happens with squash merges?**
 When squash-merging, git concatenates all commit bodies. The result is a chronological trail of typed, scoped action lines — agents parse and group these without issue. No cleanup needed. Regular merges, rebases, and cherry-picks preserve commit bodies intact.
 
-**Do I need to use every action type on every commit?**
-No. Use only what applies. Most commits need 0-3 action lines. Trivial changes need none.
+**What about git worktrees?**
+Worktrees share the same `.git` database. All contextual commits are visible and queryable from any worktree — `git log --grep`, `/recall`, and all action line queries work identically regardless of which worktree you're in. No special handling needed.
 
 **What if my agent doesn't support Agent Skills?**
 You can still write contextual commits manually. The convention is the value — the skill just automates it. Add the instructions to your CLAUDE.md, .cursorrules, or equivalent project configuration.
 
-**How do I search contextual commits?**
-
-Use `/recall` with a scope or action+scope query:
-```
-/recall auth                  — all action lines for the auth scope
-/recall rejected(auth)        — just rejected approaches for auth
-/recall constraint(session)   — just constraints for session
-```
-
-Or query git directly:
-```bash
-git log --all --grep="rejected(auth"
-git log main..HEAD --format="%b" | grep -E "^(intent|decision|rejected|constraint|learned)\("
-```
-
-**What should the scope be?**
-Whatever is meaningful in your project's vocabulary. Domain concepts (`auth`, `payments`, `notifications`), module names (`api-gateway`, `session-store`), or technical concerns (`database-migration`, `caching`). Be consistent — use the same scope when referring to the same concept across commits.
-
 ## What This Is Not
 
 This is a **convention**, not a tool. It works today, manually, with zero installation.
+
+Contextual commits focus on intent and historical context — the two types that vanish with conversation windows. Other context types — structural (architecture, dependencies), conventional (patterns, code style), verification (test strategy, quality criteria) — can be recovered from the codebase itself and require different capture mechanisms.
 
 The reference implementation (skill + command) makes it easier to practice the convention with AI agents. But the value is in the commit history itself — readable by any human, parseable by any tool, owned by git.
 
