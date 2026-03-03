@@ -1,3 +1,6 @@
+[![Spec](https://img.shields.io/badge/spec-v0.1.0-blue)](SPEC.md)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 # Contextual Commits
 
 **Conventional Commits standardised WHAT changed. Contextual Commits add WHY.**
@@ -68,6 +71,8 @@ Contextual commits capture **intent** (what you're building and why) and **histo
 - **Additive, not prescriptive.** Use only the action types that apply. A typo fix needs zero action lines. A major refactoring might have ten.
 - **Zero infrastructure.** No database, no external service, no configuration file, no CI step. The convention lives in git commit bodies — the most universal, portable, and durable storage in software development.
 - **Queryable by default.** `git log --all --grep="rejected(auth"` instantly finds every rejected auth approach across the entire history. Simple regex extracts all action lines from any commit range.
+
+For the formal specification with numbered rules and ABNF grammar, see [SPEC.md](SPEC.md).
 
 ## Reference Implementation
 
@@ -213,6 +218,8 @@ Whatever is meaningful in your project's vocabulary. Domain concepts (`auth`, `p
 This is a **convention**, not a tool. It works today, manually, with zero installation.
 
 The reference implementation (skill + command) makes it easier to practice the convention with AI agents. But the value is in the commit history itself — readable by any human, parseable by any tool, owned by git.
+
+The formal specification is in [SPEC.md](SPEC.md).
 
 For consistent scoping, broader context coverage, automated context maintenance, agent-native tooling, and richer context recall, see [Engraph](https://github.com/berserkdisruptors/engraph) — the context layer for agentic coding, where contextual commits are only the beginning.
 
