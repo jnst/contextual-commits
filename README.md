@@ -75,20 +75,11 @@ This repo includes two agent-agnostic files following the [Agent Skills](https:/
 
 ### Quick Start
 
-Copy the two skill files into your project:
-
-```
-your-project/
-├── .claude/skills/contextual-commit/SKILL.md    # Claude Code
-├── .claude/skills/recall/SKILL.md               # Claude Code
-├── .github/skills/contextual-commit/SKILL.md    # GitHub Copilot
-├── .github/skills/recall/SKILL.md               # GitHub Copilot
-├── .cursor/skills/contextual-commit/SKILL.md    # Cursor
-├── .cursor/skills/recall/SKILL.md               # Cursor
-└── ... (wherever your agent loads skills from)
+```bash
+npx skills add berserkdisruptors/contextual-commits
 ```
 
-That's it. Your agent now knows how to write contextual commits and how to reconstruct context from git history.
+Auto-detects your agent (Claude Code, Cursor, Copilot, Codex, Gemini CLI, and [40+ others](https://agentskills.io)), installs the skills to the correct directory. That's it.
 
 ### What's Included
 
