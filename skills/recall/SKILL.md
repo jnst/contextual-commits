@@ -30,12 +30,28 @@ Determine the working state:
 ```bash
 CURRENT_BRANCH=$(git branch --show-current)
 DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
+
+# Find the actual parent branch, not just the repo default.
+# Try upstream tracking branch first (fast path).
+BASE_BRANCH=$(git rev-parse --abbrev-ref @{upstream} 2>/dev/null | sed 's|^origin/||')
+
+# If no upstream, find the nearest local branch by commit distance.
+if [ -z "$BASE_BRANCH" ]; then
+    BASE_BRANCH=$(git for-each-ref --format='%(refname:short)' refs/heads/ | while read branch; do
+        [ "$branch" = "$CURRENT_BRANCH" ] && continue
+        echo "$(git log --oneline "$branch..$CURRENT_BRANCH" 2>/dev/null | wc -l | tr -d ' ') $branch"
+    done | sort -n | head -1 | awk '{print $2}')
+fi
+
+# Final fallback to default branch.
+BASE_BRANCH=${BASE_BRANCH:-$DEFAULT_BRANCH}
+
 UNSTAGED=$(git diff --stat)
 STAGED=$(git diff --cached --stat)
-BRANCH_COMMITS=$(git log ${DEFAULT_BRANCH}..HEAD --oneline 2>/dev/null | wc -l | tr -d ' ')
+BRANCH_COMMITS=$(git log ${BASE_BRANCH}..HEAD --oneline 2>/dev/null | wc -l | tr -d ' ')
 ```
 
-This determines which of four scenarios you are in.
+`DEFAULT_BRANCH` identifies the repository's primary branch (for scenario C/D detection). `BASE_BRANCH` identifies the closest ancestor branch — which may differ when feature branches are created from non-default branches (e.g., a feature branched from `develop`). All branch-relative queries use `BASE_BRANCH`.
 
 ### Step 2: Gather Raw Material
 
@@ -45,7 +61,7 @@ This is the richest scenario. Gather:
 
 ```bash
 # Contextual action lines from all branch commits
-git log ${DEFAULT_BRANCH}..HEAD --format="%H%n%s%n%b%n---COMMIT_END---"
+git log ${BASE_BRANCH}..HEAD --format="%H%n%s%n%b%n---COMMIT_END---"
 
 # Unstaged changes (what's in progress right now)
 git diff --stat
@@ -62,8 +78,8 @@ git diff --cached --stat
 git diff --stat
 git diff --cached --stat
 
-# Last few commits on the default branch for project context
-git log ${DEFAULT_BRANCH} -10 --format="%H%n%s%n%b%n---COMMIT_END---"
+# Last few commits on the parent branch for project context
+git log ${BASE_BRANCH} -10 --format="%H%n%s%n%b%n---COMMIT_END---"
 ```
 
 #### Scenario C — On the default branch
@@ -113,6 +129,15 @@ Learned: passport-google needs explicit offline_access scope for refresh tokens.
 In progress: Integration tests for callback handler (unstaged).
 ```
 
+When branched from a non-default branch:
+
+```
+Branch: feat/oauth-refresh (2 commits ahead of develop, no uncommitted changes)
+
+Active intent: Implement token refresh for OAuth providers.
+Constraint: Must stay compatible with the session store changes on develop.
+```
+
 Priority order:
 1. Active intent (what we're building and why)
 2. Current approach (decisions made)
@@ -126,13 +151,13 @@ If intent evolved during the branch (a pivot), show both the original and curren
 #### For Scenario B (branch with no commits):
 
 ```
-Branch: feat/new-feature (0 commits ahead of main)
+Branch: feat/new-feature (0 commits ahead of develop)
 
 No contextual history on this branch yet.
 Staged: 2 files (src/auth/provider.ts, src/auth/types.ts)
 Unstaged: none
 
-Recent project activity (from main):
+Recent project activity (from develop):
   - Auth: OAuth provider framework merged, Google working
   - Payments: Multi-currency support shipped (EUR, GBP alongside USD)
 ```
