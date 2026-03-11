@@ -113,6 +113,7 @@ Five types. Each captures signal no other type covers. Each is immediately usefu
 - **Additive, not prescriptive.** Use only the action types that apply. A typo fix needs zero action lines. A major refactoring might have ten.
 - **Zero infrastructure.** No database, no external service, no configuration file, no CI step. The convention lives in git commit bodies — the most universal, portable, and durable storage in software development.
 - **Queryable by default.** `git log --all --grep="rejected(auth"` instantly finds every rejected auth approach across the entire history. Simple regex extracts all action lines from any commit range.
+- **Capture, not prescription.** Action lines are point-in-time events — they record what was discovered, decided, or rejected during a specific session. They are not standing rules for future commits. Deriving conventions or enforcing patterns from accumulated history is the consuming tool's job. The convention captures faithfully; interpretation is a downstream concern.
 
 For the formal specification with numbered rules and ABNF grammar, see [SPEC.md](SPEC.md).
 
