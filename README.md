@@ -1,82 +1,89 @@
-[![Spec](https://img.shields.io/badge/spec-v0.1.0-blue)](SPEC.md)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[Spec](SPEC.md)
+[License](LICENSE)
 
 # Contextual Commits
 
-**Conventional Commits standardised WHAT changed. Contextual Commits add WHY.**
+> これは [berserkdisruptors/contextual-commits](https://github.com/berserkdisruptors/contextual-commits) の日本語訳 fork です。本家の仕様・ドキュメントを日本語化したものであり、規約本体は同一です。
 
-A convention for embedding decision traces in git commit bodies. Every commit carries not just the code change, but the intent and reasoning that shaped it — structured as typed action lines that any tool can parse and any agent can query.
+**Conventional Commits は WHAT(何が変わったか)を標準化しました。Contextual Commits は WHY(なぜ)を加えます。**
 
-No new tools. No infrastructure. Just better commits.
+git コミット body に意思決定の記録を埋め込むための規約です。コミットはコード変更だけでなく、その形を決めた意図と理由を、どのツールからもパース可能・どのエージェントからもクエリ可能な、型付きの action line として運びます。
+
+新しいツールは要りません。インフラも要りません。ただ、より良いコミットを残すだけです。
 
 ---
 
-**Standard AI commit:**
-```
-feat(auth): implement Google OAuth provider
+**一般的な AI によるコミット:**
 
-Added GoogleAuthProvider class with passport.js integration.
-Created callback route handler at /api/auth/callback/google.
-Added refresh token logic with offline access scope.
-Updated auth middleware to support multiple providers.
 ```
-This restates what the diff already shows. Zero signal added.
+feat(auth): Google OAuth プロバイダーを実装
+
+passport.js との統合により GoogleAuthProvider クラスを追加。
+/api/auth/callback/google に callback route handler を作成。
+offline アクセススコープでrefresh tokenのロジックを追加。
+複数プロバイダーをサポートするよう認証ミドルウェアを更新。
+```
+
+これは diff を見れば分かることを言い換えているだけです。signal (diff では示せない有益な情報) は何も増えていません。
 
 **Contextual commit:**
-```
-feat(auth): implement Google OAuth provider
 
-intent(auth): social login starting with Google, then GitHub and Apple
-decision(oauth-library): passport.js over auth0-sdk for multi-provider flexibility
-rejected(oauth-library): auth0-sdk — locks into their session model, incompatible with redis store
-constraint(callback-routes): must follow /api/auth/callback/:provider pattern per existing convention
-constraint(session-store): redis 24h TTL means tokens must refresh within that window
-learned(passport-google): requires explicit offline_access scope for refresh tokens
 ```
-The subject line tells you **what**. The body tells you **why**.
+feat(auth): Google OAuth プロバイダーを実装
+
+intent(auth): Google を皮切りにソーシャルログインを導入。続いて GitHub、Apple を予定
+decision(oauth-library): multi-provider 対応の柔軟性のため auth0-sdk ではなく passport.js を採用
+rejected(oauth-library): auth0-sdk — 独自のセッションモデルに縛られ、redis ストアと両立しない
+constraint(callback-routes): 既存規約に従い /api/auth/callback/:provider パターンに準拠する必要がある
+constraint(session-store): redis の TTL は 24 時間のため、トークンはその範囲内でリフレッシュする必要がある
+learned(passport-google): refresh token取得には明示的に offline_access スコープが必要
+```
+
+subject line は **何を** したかを伝えます。body は **なぜ** そうしたかを伝えます。
 
 ---
 
-## Motivation
+## 動機
 
-AI coding tools are everywhere. Trust in their output isn't. The gap is context.
+AI コーディングツールは至るところにあります。その出力への信頼はそうではありません。このギャップの正体は文脈(context)です。
 
-Every AI coding session produces three outputs:
-1. **Code changes** — committed to git. Preserved.
-2. **Decisions** — which approach was chosen, what was rejected, what constraints were found. **Lost.**
-3. **Understanding** — deeper comprehension of how the system works and why. **Lost.**
+AI コーディングのセッションは毎回 3 つの成果を生み出します:
 
-Two-thirds of every session's value evaporates when the conversation window closes. Commit history is the one context source every AI coding tool can access out of the box — yet the standard AI-generated commit body restates what the diff shows. What agents can't get from the diff is *why* an approach was chosen, what constraints shaped it, or what was tried and rejected.
+1. **コード変更** — git にコミットされ、保存されます。
+2. **意思決定** — どのアプローチが選ばれ、何が却下され、どんな制約が見つかったか。**失われます。**
+3. **理解** — システムがどう動いているか、なぜそうなっているかについての深い把握。**失われます。**
 
-Git tracks branches, diffs, and history. The one thing it doesn't track is reasoning. The commit body has always been available for this.
+会話ウィンドウが閉じた瞬間、そのセッションが生んだ価値の 2/3 は蒸発します。コミット履歴は、あらゆる AI コーディングツールが最初から参照できる唯一の文脈ソースです。それにも関わらず、標準的な AI 生成のコミット body は diff に既に書いてあることを繰り返しているに過ぎません。エージェントが diff から読み取れないのは、なぜそのアプローチが選ばれたか、どんな制約がそれを形作ったか、何が試されて却下されたかです。
 
-### The context that disappears
+git はブランチ、diff、履歴を追跡します。git が追跡しないただ一つのもの、それが「理由」です。コミット body はずっと前からそのために空けられていた場所です。
 
-The agent proposes an approach you already tried and rejected last session — but the reasoning that ruled it out died with the conversation window. It writes a clean implementation that violates a constraint it has no way of knowing about, and discovers it by failing. Three months later, another session sees a pattern in the code that looks arbitrary — it wasn't, but the reason existed in a conversation that no longer exists.
+### 消えていく文脈
 
-Same problem, three forms. AI coding sessions produce decisions and understanding alongside code, but only the code survives in git.
+エージェントは、あなたが前のセッションで試して却下したアプローチを提案してきます。しかし、それを却下した理由は会話ウィンドウとともに死にました。エージェントは、存在を知りようがない制約に反するきれいな実装を書き、失敗して初めて気付きます。3 ヶ月後、別のセッションが恣意的に見えるパターンをコード内に見つけます。恣意的ではなかったのですが、その理由は、もう存在しない会話の中にあったのです。
 
-### What agents can and cannot recover
+同じ問題の 3 つの形です。AI コーディングのセッションはコードと並んで意思決定と理解を生み出しますが、git には生き残るのはコードだけです。
 
-Several categories of context shape AI coding quality. Most can be reverse-engineered from the codebase: architecture, code patterns, test strategy, naming conventions. An agent that reads your code can figure these out.
+### エージェントが復元できるもの、できないもの
 
-Two categories cannot be reverse-engineered: **what you intended** and **what you already tried**. Intent and historical context — the decisions made, alternatives rejected, constraints discovered, lessons learned — exist only in human memory and disappearing conversations.
+AI コーディングの品質を左右する文脈にはいくつかのカテゴリがあります。その大半はコードベースからリバースエンジニアリングできます。アーキテクチャ、コードパターン、テスト戦略、命名規約。コードを読めるエージェントなら、これらは把握できます。
 
-Contextual commits capture exactly these two. Not because they're the most interesting, but because they're the ones that would otherwise be permanently lost.
+しかしリバースエンジニアリングできないカテゴリが 2 つあります。**何をしようとしていたか(intent)** と **すでに何を試したか(history)** です。意図と歴史的文脈 — なされた意思決定、却下された代替案、発見された制約、得られた学び — は、人間の記憶と消えていく会話の中にしか存在しません。
 
-### Compounding
+Contextual commits はまさにこの 2 つを捕捉します。最も興味深い情報だからではなく、放っておけば永久に失われる情報だからです。
 
-The first contextual commit saves one future re-exploration. The hundredth means an agent starting a fresh session inherits every decision, rejection, constraint, and learning from every previous session — across every contributor.
+### 複利
 
-This is not documentation you maintain. It's append-only history that accumulates as a side effect of committing code. No files to keep current. No wiki pages to update. No merge conflicts. Just git.
+最初の contextual commit は将来の再探索を 1 回分節約します。100 回目になれば、新しいセッションを開始するエージェントは、全ての寄稿者による全ての過去セッションから、全ての意思決定・却下・制約・学びを継承できます。
+
+これはあなたがメンテナンスするドキュメントではありません。コードをコミットする副産物として蓄積されていく追記専用(append-only)の歴史です。更新しなければならないファイルも、書き換え続ける wiki ページも、マージコンフリクトもありません。あるのは git だけです。
 
 ---
 
-## The Convention
+## 規約
 
-### Format
+### 書式
 
-A contextual commit uses the commit body to carry structured context. The subject line is a standard [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/). The body extends it with typed action lines:
+contextual commit はコミット body に構造化された文脈を持たせます。subject line は標準的な [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) です。body はそれを型付きの action line で拡張します:
 
 ```
 <type>(<scope>): <description>
@@ -85,135 +92,133 @@ A contextual commit uses the commit body to carry structured context. The subjec
 <action-type>(<scope>): <content>
 ```
 
-**scope** is a human-readable label — the domain area, module, or concept. Use whatever vocabulary is natural in your project: `auth`, `payment-flow`, `api-contracts`, `session-store`.
+**scope** は人間が読める形のラベル — ドメイン領域、モジュール、概念です。`auth`、`payment-flow`、`api-contracts`、`session-store` など、プロジェクトで自然に使われている語彙をそのまま使ってください。
 
-### Action Types
+### Action type
 
-| Type | Captures | Example |
-|------|----------|---------|
-| `intent(scope)` | What the user wanted and why | `intent(notifications): batch emails instead of per-event` |
-| `decision(scope)` | What was chosen when alternatives existed | `decision(queue): SQS over RabbitMQ for managed scaling` |
-| `rejected(scope)` | What was considered and discarded, with reason | `rejected(queue): RabbitMQ — requires self-managed infra` |
-| `constraint(scope)` | Hard limits that shaped the approach | `constraint(api): max 5MB payload, 30s timeout` |
-| `learned(scope)` | Discovered facts that prevent future mistakes | `learned(stripe): presentment ≠ settlement currency` |
 
-Five types. Each captures signal no other type covers. Each is immediately useful to an agent starting a new session.
+| Type                | 捕捉する情報            | 例                                                             |
+| ------------------- | ----------------- | ------------------------------------------------------------- |
+| `intent(scope)`     | ユーザーが何を求めたか・なぜか   | `intent(notifications): イベント単位ではなくメールをバッチ配信する`                |
+| `decision(scope)`   | 代替案がある中で何を選んだか    | `decision(queue): マネージドなスケーリングのため RabbitMQ ではなく SQS を採用`      |
+| `rejected(scope)`   | 検討されて捨てられたもの、理由つき | `rejected(queue): RabbitMQ — 自前運用のインフラが必要`                    |
+| `constraint(scope)` | アプローチを形作ったハードリミット | `constraint(api): ペイロード最大 5MB、タイムアウト 30 秒`                    |
+| `learned(scope)`    | 将来のミスを防ぐ、発見された事実  | `learned(stripe): presentment currency ≠ settlement currency` |
 
-- `intent` — what the user is trying to achieve. Without it, the agent reverse-engineers purpose from code.
-- `decision` — what approach was chosen. Without it, the agent doesn't know if a pattern is intentional or accidental.
-- `rejected` — what was tried and discarded. Without it, the agent re-explores dead ends. The highest-value type.
-- `constraint` — hard limits on the implementation. Without it, the agent discovers them by failing.
-- `learned` — API quirks, non-obvious behaviors, documentation gaps. Without it, the agent wastes cycles rediscovering gotchas. Distinct from constraints: constraints are boundaries to enforce, learnings are traps to avoid.
 
-### Design Principles
+5 つの型。それぞれが他の型ではカバーできない signal を捕捉します。それぞれが、新しいセッションを開始するエージェントにとってすぐに役立ちます。
 
-- **Extends, never breaks.** The subject line is a standard Conventional Commit. All existing tooling (commitlint, semantic-release, changelog generators) works unchanged.
-- **Agent-native, human-readable.** Designed for agents to parse and query programmatically. Humans benefit as a byproduct — `git log` shows useful context immediately, but the format is optimised for machine consumption.
-- **Signal the diff can't show.** Every action line must carry information that is not already visible in the code changes. If the diff explains it, don't repeat it. This is the core quality rule.
-- **Additive, not prescriptive.** Use only the action types that apply. A typo fix needs zero action lines. A major refactoring might have ten.
-- **Zero infrastructure.** No database, no external service, no configuration file, no CI step. The convention lives in git commit bodies — the most universal, portable, and durable storage in software development.
-- **Queryable by default.** `git log --all --grep="rejected(auth"` instantly finds every rejected auth approach across the entire history. Simple regex extracts all action lines from any commit range.
-- **Capture, not prescription.** Action lines are point-in-time events — they record what was discovered, decided, or rejected during a specific session. They are not standing rules for future commits. Deriving conventions or enforcing patterns from accumulated history is the consuming tool's job. The convention captures faithfully; interpretation is a downstream concern.
+- `intent` — ユーザーが達成しようとしていること。これがないと、エージェントはコードから目的をリバースエンジニアリングするはめになります。
+- `decision` — どのアプローチを選んだか。これがないと、エージェントはパターンが意図的なのか偶然なのかを判別できません。
+- `rejected` — 何を試して捨てたか。これがないと、エージェントは同じ袋小路を再探索します。最も価値の高い型です。
+- `constraint` — 実装上のハードリミット。これがないと、エージェントは失敗することで制約を発見することになります。
+- `learned` — API の癖、非自明な挙動、ドキュメントの抜け。これがないと、エージェントは同じ落とし穴を再発見するのに時間を浪費します。constraint とは別物です。constraint は守るべき境界であり、learned は避けるべき罠です。
 
-For the formal specification with numbered rules and ABNF grammar, see [SPEC.md](SPEC.md).
+### 設計原則
 
----
+- **拡張する、壊さない。** subject line は標準的な Conventional Commit です。既存の全ツール(commitlint、semantic-release、チェンジログ生成ツール)はそのまま動きます。
+- **エージェントネイティブで、人間にも読める。** エージェントがプログラムでパース・クエリできるように設計されています。人間への恩恵は副産物です。`git log` は即座に有益な文脈を表示しますが、書式は機械消費向けに最適化されています。
+- **diff が示せない signal。** 全ての action line は、コード変更にはまだ見えていない情報を運ばなければなりません。diff が説明していることを繰り返してはいけません。これが品質面の核となるルールです。
+- **追加するだけ、強制しない。** 当てはまる action type だけ使ってください。typo 修正には 0 行の action line で十分です。大きなリファクタリングには 10 行入ることもあります。
+- **ゼロインフラ。** データベース、外部サービス、設定ファイル、CI ステップは一切不要です。規約は git コミット body に住みます — ソフトウェア開発において最も普遍的、可搬的、永続的なストレージです。
+- **既定でクエリ可能。** `git log --all --grep="rejected(auth"` で、履歴全体から却下された認証アプローチを即座に見つけられます。シンプルな正規表現で任意のコミット範囲から action line を抽出できます。
+- **捕捉するだけで、規定しない。** action line は時点のイベントです — 特定のセッション中に発見・決定・却下されたことの記録です。将来のコミットに対する立ち位置のルールではありません。蓄積された歴史から規約を導出したり、パターンを強制したりするのは、利用側のツールの仕事です。規約は忠実に捕捉するだけ、解釈は下流の関心事です。
 
-## Examples
-
-### When rejected lines do the work
-
-```
-feat(search): add full-text search to product catalog
-
-intent(search): replace LIKE queries — too slow beyond 50k products
-decision(search-engine): Postgres full-text search over Elasticsearch
-rejected(search-engine): Elasticsearch — operationally too heavy for current scale, revisit at 500k products
-rejected(search-engine): Algolia — cost at scale prohibitive, vendor lock-in concern
-constraint(search-index): index rebuild takes ~8 min on full catalog, must run off-peak
-```
-
-Two future re-explorations prevented. Anyone asking "why not Elasticsearch?" gets the answer without a meeting.
-
-### When learned lines do the work
-
-```
-feat(exports): generate PDF reports from dashboard data
-
-decision(pdf-engine): Puppeteer over pdfkit — design team needs pixel-perfect HTML/CSS rendering
-learned(puppeteer): requires --no-sandbox in Docker; sandbox mode crashes the container silently
-learned(puppeteer): must await networkidle0, not load — times out on pages with deferred JS
-constraint(exports): PDF generation blocks for ~3s — must run as background job, never inline
-```
-
-Each `learned` line is two hours someone won't spend rediscovering it.
-
-### When one line is enough
-
-```
-fix(checkout): prevent duplicate orders on double-click submit
-
-rejected(checkout): debounce — 300ms delay feels broken on slow connections
-```
-
-The fix is obvious from the diff. The only thing worth capturing is why the obvious alternative was ruled out.
+番号付きルールと ABNF 文法を含む公式仕様は [SPEC.md](SPEC.md) を参照してください。
 
 ---
 
-Trivial commits — dependency bumps, typo fixes, formatting — need zero action lines. A clean conventional commit subject is always better than invented context.
+## 例
+
+### rejected 行が仕事をするとき
+
+```
+feat(search): 商品カタログに全文検索を追加
+
+intent(search): LIKE クエリを置き換える — 5 万件を超えると遅すぎる
+decision(search-engine): Elasticsearch ではなく Postgres の全文検索を採用
+rejected(search-engine): Elasticsearch — 現状の規模には運用負荷が重すぎる。50 万件到達時に再検討
+rejected(search-engine): Algolia — スケール時のコストが過大、ベンダーロックインの懸念
+constraint(search-index): 全カタログのインデックス再構築に約 8 分。ピーク外で実行する必要あり
+```
+
+将来の再探索を 2 件防止。「なぜ Elasticsearch じゃないの?」と誰に聞かれても、ミーティングなしで答えが返ります。
+
+### learned 行が仕事をするとき
+
+```
+feat(exports): ダッシュボードデータから PDF レポートを生成
+
+decision(pdf-engine): pdfkit ではなく Puppeteer を採用 — デザインチームはピクセルパーフェクトな HTML/CSS レンダリングを要求
+learned(puppeteer): Docker では --no-sandbox が必要。sandbox モードだとコンテナが黙って落ちる
+learned(puppeteer): load ではなく networkidle0 で待つこと。遅延 JS のあるページで load だとタイムアウトする
+constraint(exports): PDF 生成は約 3 秒ブロックする。インラインではなくバックグラウンドジョブとして実行すること
+```
+
+`learned` 一行ごとに、誰かが再発見に費やさなくて済む 2 時間があります。
+
+### 一行で十分なとき
+
+```
+fix(checkout): ダブルクリック送信による注文重複を防止
+
+rejected(checkout): debounce — 300ms の遅延は低速回線で壊れているように感じる
+```
+
+修正内容は diff から自明です。記録する価値があるのは、自明な代替案が却下された理由だけです。
 
 ---
 
-## The Real Adoption Path
-
-This convention is a spec for AI coding tools to implement natively.
-
-The goal is for coding agents (Claude Code, OpenCode, Codex, Gemini CLI, and others) and IDEs (Cursor, Windsurf, and others) to follow this convention by default — replacing the noise they currently generate with signal. Every developer benefits when agents stop restating diffs and start preserving reasoning. The problem is universal; the solution scales through tooling, not individual discipline.
-
-The reference implementation below is a bridge for today — agent skills that any developer can install while native adoption happens. The real adoption path is tool makers building this in.
-
-Adoption is incremental — new commits carry action lines, old commits remain as they are. The context accumulates forward.
+些末なコミット — 依存関係のバージョン上げ、typo 修正、フォーマット修正 — には action line は 1 行も不要です。クリーンな Conventional Commits の subject line は、捏造された文脈よりも常に優れています。
 
 ---
 
-## Reference Implementation
+## 現実的な普及の道筋
 
-This repo includes two agent-agnostic files following the [Agent Skills](https://agentskills.io) open standard. They work with any compatible agent — Claude Code, GitHub Copilot, Cursor, Gemini CLI, and [26+ others](https://agentskills.io).
+この規約は AI コーディングツールがネイティブに実装するためのスペックです。
 
-### Quick Start
+目指すのは、コーディングエージェント(Claude Code、OpenCode、Codex、Gemini CLI など)と IDE(Cursor、Windsurf など)がデフォルトでこの規約に従うことです。現在生成されている noise (diff を読めば分かる冗長な情報) は、signal に置き換わります。エージェントが diff を言い換えるのをやめて理由の保存を始めた瞬間、全ての開発者が恩恵を受けます。問題は普遍的で、解決は個人の規律ではなくツールを通じてスケールします。
+
+以下のリファレンス実装は、今日使うための橋渡しです — ネイティブな採用が進む間、誰でもインストールできるエージェントスキルです。本来の普及の道筋は、ツールメーカーがこれをビルトインで実装することです。
+
+採用は漸進的です — 新しいコミットは action line を持ち、古いコミットはそのままです。文脈は前に向かって蓄積していきます。
+
+---
+
+## リファレンス実装
+
+このリポジトリには [Agent Skills](https://agentskills.io) オープン標準に準拠した、エージェント非依存のファイルが 2 つ含まれます。互換性のあるどのエージェント — Claude Code、GitHub Copilot、Cursor、Gemini CLI、その他 [26+](https://agentskills.io) — でも動作します。
+
+### クイックスタート
 
 ```bash
-npx skills add berserkdisruptors/contextual-commits
+npx skills add jnst/contextual-commits
 ```
 
-Auto-detects your agent, installs the skills to the correct directory. That's it.
+エージェントを自動検出し、正しいディレクトリにスキルをインストールします。これだけです。
 
-### What's Included
+### 含まれるもの
 
-| File | What It Does |
-|------|--------------|
-| [`skills/contextual-commit/SKILL.md`](skills/contextual-commit/SKILL.md) | Teaches the agent the contextual commit format. Auto-invoked when committing. Produces structured action lines based on what happened in the session. |
-| [`skills/recall/SKILL.md`](skills/recall/SKILL.md) | `/recall` — reconstructs development context from contextual commit history. |
 
-### Usage
+| File                                                                     | 内容                                                                                      |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `[skills/contextual-commit/SKILL.md](skills/contextual-commit/SKILL.md)` | contextual commit 書式をエージェントに教えます。コミット時に自動起動し、セッションで起きたことに基づいて構造化された action line を生成します。 |
+| `[skills/recall/SKILL.md](skills/recall/SKILL.md)`                       | `/recall` — contextual commit 履歴から開発文脈を再構成します。                                          |
 
-**Writing contextual commits** — just commit normally. The skill activates automatically when the agent writes a commit and produces action lines based on the session's conversation.
 
-**Recalling context:**
+### 使い方
+
+**Contextual commit を書く** — 普通にコミットするだけです。エージェントがコミットを書こうとしたときにスキルが自動で発動し、セッションの会話を元に action line を生成します。
+
+**文脈を呼び出す:**
 
 ```
-/recall                         full session briefing for the current branch
-/recall <scope>                 all action lines matching scope (prefix-matched)
-/recall <action>(<scope>)       specific action type within a scope
+/recall                         現在のブランチの完全なセッションブリーフィング
+/recall <scope>                 scope にマッチする全 action line (前方一致)
+/recall <action>(<scope>)       scope 内の特定 action type
 ```
 
-You can invoke `/recall` explicitly, or let the agent call it on its own — it's a skill, so any agent that reads context before acting will reach for it naturally.
-
-
-
-<!-- ---
-
-For consistent scoping, broader context coverage, automated context maintenance, agent-native tooling, and richer context recall, see [Engraph](https://github.com/berserkdisruptors/engraph) — the context layer for agentic coding, where contextual commits are only the beginning. -->
+`/recall` を明示的に呼び出すこともできますが、エージェントに任せても構いません — スキルなので、行動前に文脈を読むエージェントなら自然に手を伸ばします。
 
 ## License
 
