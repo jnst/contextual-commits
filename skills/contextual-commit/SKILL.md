@@ -1,7 +1,5 @@
 ---
-
-## name: contextual-commit
-
+name: contextual-commit
 description: >-
   コード変更と並んで、意図・意思決定・制約を捕捉する contextual commit を書く。
   コミット時、タスク完了時、あるいはユーザーからコミットを依頼されたときに使う。
@@ -9,6 +7,7 @@ description: >-
   追加することで、「何が」変わったかだけでなく「なぜ」そのコードが書かれたかを
   保存する。
 license: MIT
+---
 
 # Contextual Commits
 

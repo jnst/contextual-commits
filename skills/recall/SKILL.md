@@ -1,12 +1,11 @@
 ---
-
-## name: recall
-
+name: recall
 description: >-
   contextual commit から現在の開発文脈を再構成してナラティブとして提示する。
   セッション開始時、作業を再開するとき、ブランチを切り替えたときに実行する。
   現状を簡潔かつ会話的に要約する。
 license: MIT
+---
 
 # Context Recall
 
