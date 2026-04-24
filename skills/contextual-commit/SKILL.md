@@ -1,193 +1,202 @@
 ---
-name: contextual-commit
+
+## name: contextual-commit
+
 description: >-
-  Write contextual commits that capture intent, decisions, and constraints
-  alongside code changes. Use when committing code, finishing a task, or
-  when the user asks to commit. Extends Conventional Commits with structured
-  action lines in the commit body that preserve WHY code was written, not
-  just WHAT changed.
+  コード変更と並んで、意図・意思決定・制約を捕捉する contextual commit を書く。
+  コミット時、タスク完了時、あるいはユーザーからコミットを依頼されたときに使う。
+  Conventional Commits を拡張し、構造化された action line を commit body に
+  追加することで、「何が」変わったかだけでなく「なぜ」そのコードが書かれたかを
+  保存する。
 license: MIT
----
 
 # Contextual Commits
 
-You write commits that carry development reasoning in the body — the intent, decisions, constraints, and learnings that the diff alone cannot show.
+あなたは、diff だけでは示せない開発上の理由 — 意図、意思決定、制約、学び — をコミット body に持たせるコミットを書きます。
 
-## The Problem You Solve
+## あなたが解決する問題
 
-Standard commits preserve WHAT changed. The diff shows that too. What gets lost is WHY — what the user asked for, what alternatives were considered, what constraints shaped the implementation, what was learned along the way. This context evaporates when the session ends. You prevent that.
+通常のコミットは WHAT(何が変わったか)を保存します。diff もそれを示します。失われるのは WHY — ユーザーが何を依頼したか、どの代替案が検討されたか、どんな制約が実装を形作ったか、途中で何が学ばれたか、です。この文脈はセッションが終わると蒸発します。あなたはそれを防ぎます。
 
-## Commit Format
+## コミット書式
 
-The subject line is a standard Conventional Commit. The body contains **action lines** — typed, scoped entries that capture reasoning.
+subject line は標準的な Conventional Commit です。body には **action line** — 型付きでスコープ付きの、理由を捕捉するエントリ — が入ります。
 
 ```
-type(scope): subject line (standard conventional commit)
+type(scope): subject line (標準的な Conventional Commit)
 
-action-type(scope): description of reasoning or context
-action-type(scope): another entry
+action-type(scope): 理由や文脈の記述
+action-type(scope): もう 1 行
 ```
 
 ### Subject Line
 
-Follow Conventional Commits exactly. Nothing changes here:
-- `feat(auth): implement Google OAuth provider`
-- `fix(payments): handle currency rounding edge case`
-- `refactor(notifications): extract digest scheduling logic`
+Conventional Commits に厳密に従ってください。ここは何も変わりません:
 
-### Action Lines
+- `feat(auth): Google OAuth プロバイダーを実装`
+- `fix(payments): 通貨の丸め端数ケースに対処`
+- `refactor(notifications): ダイジェストスケジュールのロジックを抽出`
 
-Each line in the body follows: `action-type(scope): description`
+### Action Line
 
-**scope** is a human-readable concept label — the domain area, module, or concern. Examples: `auth`, `payment-flow`, `oauth-library`, `session-store`, `api-contracts`. Use whatever is meaningful in this project's vocabulary. Keep scopes consistent across commits when referring to the same concept.
+body の各行は次の書式に従います: `action-type(scope): description`
 
-## Action Types
+**scope** は人間が読める概念ラベル — ドメイン領域、モジュール、関心事です。例: `auth`、`payment-flow`、`oauth-library`、`session-store`、`api-contracts`。プロジェクトの語彙で意味のあるものを使ってください。同じ概念を指すなら、コミット間で scope を一貫させてください。
 
-Use only the types that apply. Most commits need 1-3 action lines. Never pad with noise.
+## Action Type
+
+当てはまる型のみ使ってください。大半のコミットは 1〜3 行の action line で十分です。noise (diff を読めば分かる冗長な情報) で埋めないでください。
 
 ### `intent(scope): ...`
-What the user wanted to achieve and why. Captures the human's voice, not your interpretation.
 
-- `intent(auth): social login starting with Google, then GitHub and Apple`
-- `intent(notifications): users want batch notifications instead of per-event emails`
-- `intent(payment-flow): must support EUR and GBP alongside USD for enterprise clients`
+ユーザーが達成したかったことと、その理由。あなたの解釈ではなく、人間の声を捕捉します。
 
-**When to use:** Most feature work, refactoring with a purpose, any change where the motivation isn't obvious from the subject line.
+- `intent(auth): Google を皮切りにソーシャルログインを導入。続いて GitHub、Apple を予定`
+- `intent(notifications): イベント単位のメールではなくバッチ通知を望む声が多い`
+- `intent(payment-flow): エンタープライズ顧客向けに USD と並んで EUR、GBP をサポートする必要がある`
+
+**When to use:** ほとんどの機能開発、目的のあるリファクタリング、subject line から動機が自明でない変更全般。
 
 ### `decision(scope): ...`
-What approach was chosen when alternatives existed. Brief reasoning.
 
-- `decision(oauth-library): passport.js over auth0-sdk for multi-provider flexibility`
-- `decision(digest-schedule): weekly on Monday 9am, not daily — matches user research`
-- `decision(currency-handling): per-transaction currency over account-level default`
+代替案がある中で何のアプローチを選んだか。簡潔に理由を添えて。
 
-**When to use:** When you evaluated options. Skip for obvious choices with no real alternatives.
+- `decision(oauth-library): multi-provider 対応の柔軟性のため auth0-sdk ではなく passport.js を採用`
+- `decision(digest-schedule): 毎日ではなく月曜 9 時週次 — ユーザーリサーチに合致`
+- `decision(currency-handling): アカウント単位のデフォルトではなくトランザクション単位の通貨指定`
+
+**When to use:** 選択肢を評価したとき。代替案の無い自明な選択はスキップ。
 
 ### `rejected(scope): ...`
-What was considered and explicitly discarded, with the reason. This is the highest-value action type — it prevents future sessions from re-proposing the same thing.
 
-- `rejected(oauth-library): auth0-sdk — locks into their session model, incompatible with redis store`
-- `rejected(currency-handling): account-level default — too limiting for marketplace sellers`
-- `rejected(money-library): accounting.js — lacks support for sub-unit (cents) arithmetic`
+検討して明示的に捨てたもの。理由つき。これが最も価値の高い action type です — 将来のセッションが同じ提案を繰り返すのを防ぎます。
 
-**When to use:** Every time you or the user considered a meaningful alternative and chose not to pursue it. Always include the reason.
+- `rejected(oauth-library): auth0-sdk — 独自のセッションモデルに縛られ、redis ストアと両立しない`
+- `rejected(currency-handling): アカウント単位のデフォルト — マーケットプレイス出品者には制約が強すぎる`
+- `rejected(money-library): accounting.js — サブ単位(セント)の演算をサポートしない`
+
+**When to use:** あなたまたはユーザーが意味のある代替案を検討した上で採用を見送ったときは、毎回。必ず理由を添えること。
 
 ### `constraint(scope): ...`
-Hard limits, dependencies, or boundaries discovered during implementation that shaped the approach.
 
-- `constraint(callback-routes): must follow /api/auth/callback/:provider pattern per existing convention`
-- `constraint(stripe-integration): currency required at PaymentIntent creation, cannot change after`
-- `constraint(session-store): redis 24h TTL means tokens must refresh within that window`
+アプローチを形作った、実装中に発見したハードリミット・依存関係・境界。
 
-**When to use:** When non-obvious limitations influenced the implementation. Things the next person working here would need to know.
+- `constraint(callback-routes): 既存規約に従い /api/auth/callback/:provider パターンに準拠する必要がある`
+- `constraint(stripe-integration): PaymentIntent 作成時に通貨を指定する必要があり、後から変更不可`
+- `constraint(session-store): redis の TTL は 24 時間のため、トークンはその範囲内でリフレッシュが必要`
+
+**When to use:** 自明でない制約が実装に影響したとき。次にここを触る人が知る必要のあること。
 
 ### `learned(scope): ...`
-Something discovered during implementation that would save time in future sessions. API quirks, undocumented behavior, performance characteristics.
 
-- `learned(passport-google): requires explicit offline_access scope for refresh tokens, undocumented in quickstart`
-- `learned(stripe-multicurrency): presentment currency and settlement currency are different concepts`
-- `learned(exchange-rates): Stripe handles conversion — do NOT store our own rates`
+実装中に発見したもので、将来のセッションで時間を節約できる事実。API の癖、ドキュメント外の挙動、パフォーマンス特性。
 
-**When to use:** "I wish I'd known this before I started" moments. Library gotchas, API surprises, non-obvious behaviors.
+- `learned(passport-google): refresh token取得には offline_access スコープが明示的に必要。クイックスタートに記述なし`
+- `learned(stripe-multicurrency): presentment currency と settlement currency は別概念`
+- `learned(exchange-rates): Stripe が変換を処理する — 独自のレートを保持してはならない`
 
+**When to use:** 「これ、最初に知っていたかった」という瞬間。ライブラリの罠、API の想定外の振る舞い、非自明な挙動。
 
-## Before You Write the Commit
+## コミットを書く前に
 
-Determine the commit scope, then compose action lines:
+コミットの範囲を決めた上で、action line を組み立てます:
 
-1. **Check for staged changes first** — run `git diff --cached --stat`.
-   - **If staged changes exist:** these are the commit scope. Do not consider unstaged or untracked files — the user has already expressed what belongs in this commit by staging it.
-   - **If nothing is staged:** consider all unstaged modifications and untracked files as candidates. Use session context and the diff to decide what to stage and commit.
-2. **Identify what you have session context for** — changes you produced, discussed, or observed reasoning for during this conversation.
-3. **Identify what you don't** — files or changes from a prior session, another agent, or manual edits outside this conversation.
-4. **Write action lines accordingly:**
-   - For changes you have context for: full action lines from session knowledge.
-   - For changes you don't: apply the "When You Lack Conversation Context" rules below — write only what the diff evidences.
+1. **まずステージ済みの変更を確認する** — `git diff --cached --stat` を実行。
+  - **ステージ済み変更がある場合:** それがコミット範囲です。未ステージやトラック外のファイルは考慮しません — ユーザーはステージングという形でこのコミットに何を含めるかをすでに表明しています。
+  - **何もステージされていない場合:** 全ての未ステージ変更とトラック外ファイルを候補とします。セッションの文脈と diff から、何をステージしてコミットするか判断します。
+2. **自分が文脈を持っている変更を特定する** — 今回の会話中にあなたが生成した、議論した、あるいは理由を観察した変更。
+3. **文脈を持たない変更を特定する** — 前のセッション、別のエージェント、会話外の手動編集によるファイルや変更。
+4. **それに応じて action line を書く:**
+  - 文脈を持つ変更: セッションの知識から完全な action line を書く。
+  - 文脈を持たない変更: 下の「会話の文脈がないとき」のルールを適用し、diff が示すことだけを書く。
 
-The commit message must account for ALL changes in the commit scope, not just the ones you worked on. Ignoring changes you didn't produce is worse than writing thin action lines for them.
+コミットメッセージはコミット範囲内の**全ての**変更を説明しなければなりません。自分が書いた変更だけに限りません。自分が生成しなかった変更を無視するのは、薄い action line を書くよりも悪い選択です。
 
-## Examples
+## 例
 
-### Simple fix — no action lines needed
-
-```
-fix(button): correct alignment on mobile viewport
-```
-
-The conventional commit subject is sufficient. Don't add noise.
-
-### Moderate feature
+### 単純な修正 — action line は不要
 
 ```
-feat(notifications): add email digest for weekly summaries
-
-intent(notifications): users want batch notifications instead of per-event emails
-decision(digest-schedule): weekly on Monday 9am — matches user research feedback
-constraint(email-provider): SendGrid batch API limited to 1000 recipients per call
+fix(button): モバイルビューポートでの位置ずれを修正
 ```
 
-### Complex architectural change
+Conventional Commit の subject line で十分です。noise を足さないこと。
+
+### 中程度の機能
 
 ```
-refactor(payments): migrate from single to multi-currency support
+feat(notifications): 週次サマリのメールダイジェストを追加
 
-intent(payments): enterprise customers need EUR and GBP alongside USD
-intent(payment-architecture): must be backward compatible, existing USD flows unchanged
-decision(currency-handling): per-transaction currency over account-level default
-rejected(currency-handling): account-level default too limiting for marketplace sellers
-rejected(money-library): accounting.js — lacks sub-unit arithmetic, using currency.js instead
-constraint(stripe-integration): Stripe requires currency at PaymentIntent creation, cannot change after
-constraint(database-migration): existing amount columns need companion currency columns, not replacement
-learned(stripe-multicurrency): presentment currency vs settlement currency are different Stripe concepts
-learned(exchange-rates): Stripe handles conversion, we should NOT store our own rates
+intent(notifications): イベント単位のメールではなくバッチ通知を望む声が多い
+decision(digest-schedule): 月曜 9 時週次 — ユーザーリサーチのフィードバックに合致
+constraint(email-provider): SendGrid のバッチ API は 1 コール 1000 宛先まで
 ```
 
-### Mid-implementation pivot
-
-When intent changes during work, capture it on the commit where the pivot happens:
+### 複雑なアーキテクチャ変更
 
 ```
-refactor(auth): switch from session-based to JWT tokens
+refactor(payments): 単一通貨からmulti-currency 対応に移行
 
-intent(auth): original session approach incompatible with redis cluster setup
-rejected(auth-sessions): redis cluster doesn't support session stickiness needed by passport sessions
-decision(auth-tokens): JWT with short expiry + refresh token pattern
-learned(redis-cluster): session affinity requires sticky sessions at load balancer level — too invasive
+intent(payments): エンタープライズ顧客が USD と並んで EUR、GBP を必要としている
+intent(payment-architecture): 既存の USD フローを変えず、後方互換性を維持する必要がある
+decision(currency-handling): アカウント単位のデフォルトではなくトランザクション単位の通貨指定
+rejected(currency-handling): アカウント単位のデフォルト — マーケットプレイス出品者には制約が強すぎる
+rejected(money-library): accounting.js — サブ単位演算をサポートしない。代わりに currency.js を採用
+constraint(stripe-integration): Stripe は PaymentIntent 作成時に通貨を確定し、後から変更不可
+constraint(database-migration): 既存の amount カラムは置き換えではなく、通貨カラムを併設する必要がある
+learned(stripe-multicurrency): presentment currency と settlement currency は別の Stripe 概念
+learned(exchange-rates): Stripe が変換を処理する。独自のレートを保持してはならない
 ```
 
-## When You Lack Conversation Context
+### 実装途中の方針転換
 
-Sometimes staged changes include work you didn't produce in this session — prior session output, another agent's changes, pasted code, externally generated files, or manual edits. For any change where you lack the reasoning trail:
+intent が作業中に変わった場合、その転換が起きたコミットで捕捉します:
 
-**Only write action lines for what is clearly evidenced in the diff.** Do not speculate about intent or constraints you cannot observe.
+```
+refactor(auth): セッションベースから JWT トークンに切り替え
 
-What you CAN infer from a diff alone:
-- `decision(scope)` — if a clear technical choice is visible (new dependency added, pattern adopted, library switched). Example: `decision(http-client): switched from axios to native fetch` is visible from the diff.
+intent(auth): 元のセッション方式は redis cluster 構成と両立しない
+rejected(auth-sessions): redis cluster は passport のセッションで必要なsession stickinessに未対応
+decision(auth-tokens): JWT + 短い有効期限 + refresh tokenのパターン
+learned(redis-cluster): session affinityは LB レベルでの sticky session を要求する — 侵襲的すぎる
+```
 
-What you CANNOT infer — do not fabricate:
-- `intent(scope)` — why the change was made is not in the diff. Don't restate what the diff shows.
-- `rejected(scope)` — what was NOT chosen is invisible in what WAS committed.
-- `constraint(scope)` — hard limits are almost never visible in code changes.
-- `learned(scope)` — learnings come from the process, not the output.
+## 会話の文脈がないとき
 
-**A clean conventional commit subject with no action lines is always better than fabricated context.**
+ステージ済みの変更に、あなたがこのセッションで生成していないもの — 前のセッション出力、別のエージェントの変更、貼り付けコード、外部生成ファイル、手動編集 — が含まれることがあります。理由のトレイルを持たない変更については:
 
-## Git Workflows
+**diff で明確に証拠立てられることについてのみ action line を書いてください。** 観察できない意図や制約を推測してはいけません。
 
-Contextual commits work with every standard git workflow. No special handling needed.
+diff 単体から推論できること:
 
-- **Regular merges:** Commit bodies preserved intact.
-- **Squash merges:** All commit bodies concatenated into the squash commit body. The result is a chronological trail of typed, scoped action lines — agents parse, filter, and group these without issue.
-- **Rebase and cherry-pick:** Commit bodies preserved.
+- `decision(scope)` — 明確な技術的選択が読み取れる場合(新規依存の追加、パターンの採用、ライブラリの切り替えなど)。例: `decision(http-client): axios からネイティブ fetch に切り替え` は diff から読み取れます。
 
-## Rules
+推論できない — 捏造しないこと:
 
-1. **The subject line is a Conventional Commit.** Never break existing conventions or tooling.
-2. **Action lines go in the body only.** Never in the subject line.
-3. **Only write action lines that carry signal.** If the diff already explains it, don't repeat it. If there was nothing to decide, reject, or discover, write no action lines.
-4. **Be concise but complete.** Each action line should be a single clear statement. No artificial length limits, but don't write essays either.
-5. **Use consistent scopes within a project.** If you called it `auth` in one commit, don't call it `authentication` in the next.
-6. **Capture the user's intent in their words.** For `intent` lines, reflect what the human asked for, not your implementation summary.
-7. **Always explain why for `rejected` lines.** A rejection without a reason is useless — the next agent will just re-propose it.
-8. **Don't invent action lines for trivial commits.** A typo fix, a dependency bump, a formatting change — the conventional commit subject is enough.
-9. **Don't fabricate context you don't have.** If you weren't part of the reasoning, don't pretend you were. See "When You Lack Conversation Context" above.
+- `intent(scope)` — なぜ変更したかは diff にはありません。diff が示すことを言い換えるだけにならないように。
+- `rejected(scope)` — 選ばれなかったものは、選ばれてコミットされたものからは見えません。
+- `constraint(scope)` — ハードリミットはコード変更にほぼ現れません。
+- `learned(scope)` — 学びはアウトプットではなくプロセスから生まれます。
+
+**クリーンな Conventional Commit の subject line だけで action line 無しのほうが、捏造された文脈より常に優れています。**
+
+## Git ワークフロー
+
+Contextual commit は標準的な git ワークフロー全てとそのまま動作します。特別な扱いは不要です。
+
+- **通常のマージ:** コミット body はそのまま保存されます。
+- **スカッシュマージ:** 全コミット body がスカッシュコミット body に連結されます。結果として時系列順の型付き・スコープ付き action line のトレイルが得られ、エージェントは問題なくパース・フィルタ・グループ化できます。
+- **リベース・チェリーピック:** コミット body はそのまま保存されます。
+
+## ルール
+
+1. **subject line は Conventional Commit。** 既存規約やツールを壊さない。
+2. **action line は body のみ。** subject line には絶対入れない。
+3. **signal (diff では示せない有益な情報) を運ぶ action line のみ書く。** diff が既に説明しているなら繰り返さない。決めること・却下すること・発見することが何もなかったなら、action line は 0 行。
+4. **簡潔かつ完全に。** 各 action line は明確な一文。長さの人工的な制限はないが、エッセイを書かないこと。
+5. **プロジェクト内で scope を一貫させる。** あるコミットで `auth` と呼んだなら、次で `authentication` と呼ばない。
+6. `**intent` 行はユーザーの言葉で意図を捕捉する。** あなたの実装要約ではなく、人間が依頼したそのものを反映する。
+7. `**rejected` 行は必ず理由を説明する。** 理由のない却下は無意味 — 次のエージェントがまた提案してきます。
+8. **些末なコミットには action line を発明しない。** typo 修正、依存関係のバージョン上げ、フォーマット修正 — Conventional Commit の subject line で十分。
+9. **持っていない文脈を捏造しない。** 推論プロセスに居合わせなかったなら、居合わせたふりをしない。上の「会話の文脈がないとき」を参照。
+
